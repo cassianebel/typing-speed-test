@@ -17,7 +17,7 @@ export default function RootLayout({
       <body className="font-sans">
         <div className="flex flex-col max-w-7xl mx-auto p-4 sm:p-6">
           <Header />
-          {children}
+          <main>{children}</main>
         </div>
       </body>
     </html>
