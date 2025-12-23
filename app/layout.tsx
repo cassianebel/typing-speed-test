@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
-        <div className="flex flex-col max-w-7xl mx-auto p-4 sm:p-6">
+        <div className="flex flex-col max-w-[1440] mx-auto p-4 sm:p-6">
           <Header />
           <main>{children}</main>
         </div>

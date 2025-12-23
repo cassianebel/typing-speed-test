@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
-type Difficulty = "Easy" | "Medium" | "Hard";
+type Mode = "Timed (60s)" | "Passage";
 
-export default function Difficulty() {
-  const [difficulty, setDifficulty] = useState<Difficulty>("Hard");
+export default function Mode() {
+  const [mode, setMode] = useState<Mode>("Timed (60s)");
   const [isOpen, setIsOpen] = useState(false);
 
   const isDesktop = useIsDesktop();
@@ -23,19 +23,19 @@ export default function Difficulty() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  const handleDifficultyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDifficulty(e.target.value as Difficulty);
+  const handleModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMode(e.target.value as Mode);
     if (!isDesktop) {
       setIsOpen(false);
     }
   };
 
   return (
-    <fieldset className="md:flex items-center w-full md:w-auto md:border-e border-neutral-800 pe-4">
+    <fieldset className="md:flex items-center w-full md:w-auto md:shrink-0">
       <div>
         <legend>
           <span className="hidden md:block text-neutral-400 font-light">
-            Difficulty:{" "}
+            Mode:{" "}
           </span>
           {!isDesktop && (
             <button
@@ -45,7 +45,7 @@ export default function Difficulty() {
               aria-expanded={isOpen}
               onClick={() => setIsOpen((prev) => !prev)}
             >
-              {difficulty}
+              {mode}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="11"
@@ -72,52 +72,35 @@ export default function Difficulty() {
           <div className="border-b md:border-0 border-neutral-500 p-2 px-4 md:px-2 md:py-0 flex">
             <input
               type="radio"
-              name="difficulty"
-              id="difficulty-easy"
-              value="Easy"
-              checked={difficulty === "Easy"}
-              onChange={handleDifficultyChange}
+              name="mode"
+              id="mode-timed"
+              value="Timed (60s)"
+              checked={mode === "Timed (60s)"}
+              onChange={handleModeChange}
               className="peer md:sr-only"
             />
             <label
-              htmlFor="difficulty-easy"
-              className="md:border border-neutral-500 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
+              htmlFor="mode-timed"
+              className="md:border border-neutral-500 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow shrink-0"
             >
-              Easy
-            </label>
-          </div>
-          <div className="border-b md:border-0 border-neutral-500 p-2 px-4 md:px-2 md:py-0 flex">
-            <input
-              type="radio"
-              name="difficulty"
-              id="difficulty-medium"
-              value="Medium"
-              checked={difficulty === "Medium"}
-              onChange={handleDifficultyChange}
-              className="peer md:sr-only"
-            />
-            <label
-              htmlFor="difficulty-medium"
-              className="md:border border-neutral-500 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
-            >
-              Medium
+              Timed (60s)
             </label>
           </div>
           <div className="p-2 px-4 md:px-2 md:py-0 flex">
             <input
               type="radio"
-              name="difficulty"
-              id="difficulty-hard"
-              value="Hard"
-              checked={difficulty === "Hard"}
-              onChange={handleDifficultyChange}
+              name="mode"
+              id="mode-passage"
+              value="Passage"
+              checked={mode === "Passage"}
+              onChange={handleModeChange}
               className="peer md:sr-only"
             />
             <label
-              htmlFor="difficulty-hard"
+              htmlFor="mode-passage"
               className="md:border border-neutral-500 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
             >
-              Hard
+              Passage
             </label>
           </div>
         </div>
