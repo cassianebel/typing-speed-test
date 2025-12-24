@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import type { Difficulty } from "../app/page";
 
-type Difficulty = "Easy" | "Medium" | "Hard";
+type Props = {
+  difficulty: Difficulty;
+  setDifficulty: React.Dispatch<React.SetStateAction<Difficulty>>;
+};
 
-export default function Difficulty() {
-  const [difficulty, setDifficulty] = useState<Difficulty>("Hard");
+export default function Difficulty({ difficulty, setDifficulty }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
   const isDesktop = useIsDesktop();
@@ -81,7 +84,7 @@ export default function Difficulty() {
             />
             <label
               htmlFor="difficulty-easy"
-              className="md:border border-neutral-500 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
+              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
             >
               Easy
             </label>
@@ -98,7 +101,7 @@ export default function Difficulty() {
             />
             <label
               htmlFor="difficulty-medium"
-              className="md:border border-neutral-500 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
+              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
             >
               Medium
             </label>
@@ -115,7 +118,7 @@ export default function Difficulty() {
             />
             <label
               htmlFor="difficulty-hard"
-              className="md:border border-neutral-500 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
+              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
             >
               Hard
             </label>

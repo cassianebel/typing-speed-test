@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import type { Mode } from "../app/page";
 
-type Mode = "Timed (60s)" | "Passage";
+type Props = {
+  mode: Mode;
+  setMode: React.Dispatch<React.SetStateAction<Mode>>;
+};
 
-export default function Mode() {
-  const [mode, setMode] = useState<Mode>("Timed (60s)");
+export default function Mode({ mode, setMode }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
   const isDesktop = useIsDesktop();
@@ -81,7 +84,7 @@ export default function Mode() {
             />
             <label
               htmlFor="mode-timed"
-              className="md:border border-neutral-500 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow shrink-0"
+              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow shrink-0"
             >
               Timed (60s)
             </label>
@@ -98,7 +101,7 @@ export default function Mode() {
             />
             <label
               htmlFor="mode-passage"
-              className="md:border border-neutral-500 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
+              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
             >
               Passage
             </label>
