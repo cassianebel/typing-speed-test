@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import RadioItem from "./RadioItem";
 import type { Difficulty } from "../app/page";
 
 type Props = {
@@ -73,55 +74,31 @@ export default function Difficulty({ difficulty, setDifficulty }: Props) {
       {isOpen && (
         <div className="bg-neutral-800 md:bg-transparent rounded-md md:flex items-center">
           <div className="border-b md:border-0 border-neutral-500 p-2 px-4 md:px-2 md:py-0 flex">
-            <input
-              type="radio"
+            <RadioItem
+              label="Easy"
               name="difficulty"
               id="difficulty-easy"
-              value="Easy"
-              checked={difficulty === "Easy"}
-              onChange={handleDifficultyChange}
-              className="peer md:sr-only"
+              state={difficulty}
+              changeHandler={handleDifficultyChange}
             />
-            <label
-              htmlFor="difficulty-easy"
-              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
-            >
-              Easy
-            </label>
           </div>
           <div className="border-b md:border-0 border-neutral-500 p-2 px-4 md:px-2 md:py-0 flex">
-            <input
-              type="radio"
+            <RadioItem
+              label="Medium"
               name="difficulty"
               id="difficulty-medium"
-              value="Medium"
-              checked={difficulty === "Medium"}
-              onChange={handleDifficultyChange}
-              className="peer md:sr-only"
+              state={difficulty}
+              changeHandler={handleDifficultyChange}
             />
-            <label
-              htmlFor="difficulty-medium"
-              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
-            >
-              Medium
-            </label>
           </div>
           <div className="p-2 px-4 md:px-2 md:py-0 flex">
-            <input
-              type="radio"
+            <RadioItem
+              label="Hard"
               name="difficulty"
               id="difficulty-hard"
-              value="Hard"
-              checked={difficulty === "Hard"}
-              onChange={handleDifficultyChange}
-              className="peer md:sr-only"
+              state={difficulty}
+              changeHandler={handleDifficultyChange}
             />
-            <label
-              htmlFor="difficulty-hard"
-              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
-            >
-              Hard
-            </label>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import RadioItem from "./RadioItem";
 import type { Mode } from "../app/page";
 
 type Props = {
@@ -73,38 +74,22 @@ export default function Mode({ mode, setMode }: Props) {
       {isOpen && (
         <div className="bg-neutral-800 md:bg-transparent rounded-md md:flex items-center">
           <div className="border-b md:border-0 border-neutral-500 p-2 px-4 md:px-2 md:py-0 flex">
-            <input
-              type="radio"
+            <RadioItem
+              label="Timed (60s)"
               name="mode"
               id="mode-timed"
-              value="Timed (60s)"
-              checked={mode === "Timed (60s)"}
-              onChange={handleModeChange}
-              className="peer md:sr-only"
+              state={mode}
+              changeHandler={handleModeChange}
             />
-            <label
-              htmlFor="mode-timed"
-              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow shrink-0"
-            >
-              Timed (60s)
-            </label>
           </div>
           <div className="p-2 px-4 md:px-2 md:py-0 flex">
-            <input
-              type="radio"
+            <RadioItem
+              label="Passage"
               name="mode"
               id="mode-passage"
-              value="Passage"
-              checked={mode === "Passage"}
-              onChange={handleModeChange}
-              className="peer md:sr-only"
+              state={mode}
+              changeHandler={handleModeChange}
             />
-            <label
-              htmlFor="mode-passage"
-              className="md:border border-neutral-500 md:hover:border-blue-500 md:hover:text-blue-500 transition-colors duration-200 md:peer-focus:outline-2 outline-offset-2 p-1 px-2 peer-checked:border-blue-500 peer-checked:md:text-blue-500 rounded-md cursor-pointer grow"
-            >
-              Passage
-            </label>
           </div>
         </div>
       )}
