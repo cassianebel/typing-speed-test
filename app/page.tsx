@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Difficulty from "@/components/Difficulty";
 import Mode from "@/components/Mode";
 
@@ -14,6 +14,10 @@ export default function Home() {
   const [currentPassage, setCurrentPassage] = useState("");
   const [currentId, setCurrentId] = useState("");
   const [testing, setTesting] = useState(false);
+  const [typedCharacters, setTypedCharacters] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [timer, setTimer] = useState(60);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/data.json")
@@ -27,33 +31,102 @@ export default function Home() {
       });
   }, []);
 
-  useEffect(() => {
-    if (data) {
-      getRandomPassage();
-    }
-  }, [data, difficulty]);
-
   function getRandomPassage() {
-    const currentIndex = currentId
+    const currentPassageIndex = currentId
       ? parseInt(currentId.split("-")[1], 10) - 1
       : -1;
     const passages = data[difficulty.toLowerCase()];
     let randomIndex = Math.floor(Math.random() * passages.length);
-    while (randomIndex === currentIndex) {
+    while (randomIndex === currentPassageIndex) {
       randomIndex = Math.floor(Math.random() * passages.length);
     }
     setCurrentPassage(passages[randomIndex].text);
     setCurrentId(`${difficulty}-${randomIndex + 1}`);
   }
 
-  function startTest() {
-    setTesting(true);
-  }
+  useEffect(() => {
+    if (data) {
+      getRandomPassage();
+      setTesting(false);
+      setTypedCharacters([]);
+      setCurrentIndex(0);
+    }
+  }, [data, difficulty]);
 
   function restartTest() {
     setTesting(false);
+    setTypedCharacters([]);
+    setCurrentIndex(0);
     getRandomPassage();
+    if (mode === "Passage") {
+      setTimer(0);
+    } else {
+      setTimer(60);
+    }
     setTesting(true);
+    inputRef.current?.focus();
+  }
+
+  useEffect(() => {
+    if (mode === "Passage") {
+      setTimer(0);
+    } else {
+      setTimer(60);
+    }
+    if (testing) {
+      restartTest();
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    if (testing && mode === "Timed (60s)") {
+      if (timer > 0) {
+        const interval = setInterval(() => {
+          setTimer((prev) => prev - 1);
+        }, 1000);
+        return () => clearInterval(interval);
+      } else {
+        setTesting(false);
+      }
+    } else if (testing && mode === "Passage") {
+      const interval = setInterval(() => {
+        setTimer((prev) => prev + 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [testing, timer, mode]);
+
+  function startTest() {
+    if (mode === "Passage") {
+      setTimer(0);
+    } else {
+      setTimer(60);
+    }
+    setTesting(true);
+    inputRef.current?.focus();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+
+    if (!testing) return;
+
+    if (e.key.length === 1) {
+      setTypedCharacters((prev) => [...prev, e.key]);
+      setCurrentIndex((i) => i + 1);
+    }
+
+    if (e.key === "Backspace") {
+      setTypedCharacters((prev) => prev.slice(0, -1));
+      setCurrentIndex((i) => Math.max(i - 1, 0));
+    }
+  }
+
+  function formatTime(totalSeconds: number) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   }
 
   return (
@@ -75,7 +148,7 @@ export default function Home() {
           <p className="text-neutral-400 text-lg px-6 ">
             Time:{" "}
             <span className="font-extrabold text-neutral-000 text-2xl mx-2">
-              0:60
+              {formatTime(timer)}
             </span>
           </p>
         </div>
@@ -85,6 +158,7 @@ export default function Home() {
         </div>
       </div>
       <div
+        onClick={() => startTest()}
         id="passage"
         className="relative pt-8 pb-10 border-b border-neutral-800"
       >
@@ -95,7 +169,27 @@ export default function Home() {
               : "blur-md text-2xl md:text-4xl leading-relaxed text-neutral-400"
           }
         >
-          {currentPassage}
+          {currentPassage.split("").map((char, index) => {
+            let className = "text-neutral-400";
+            const typedChar = typedCharacters[index];
+
+            if (typedChar) {
+              className =
+                typedChar === char
+                  ? "text-green-500"
+                  : "text-red-500 underline underline-offset-8";
+            }
+
+            if (currentIndex === index) {
+              className = "bg-neutral-800";
+            }
+
+            return (
+              <span key={index} className={className}>
+                {char}
+              </span>
+            );
+          })}
         </p>
         {!testing && (
           <div className="absolute top-0 left-0 w-full h-full flex flex-col itemc-center justify-center">
@@ -112,6 +206,13 @@ export default function Home() {
           </div>
         )}
       </div>
+      <input
+        type="text"
+        className="absolute opacity-0 pointer-events-none"
+        autoFocus
+        onKeyDown={handleKeyDown}
+        ref={inputRef}
+      />
       <div className="text-center flex items-center justify-center">
         <div>
           <button
