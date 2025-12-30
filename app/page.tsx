@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Difficulty from "@/components/Difficulty";
 import Mode from "@/components/Mode";
 
@@ -14,9 +14,14 @@ export default function Home() {
   const [currentPassage, setCurrentPassage] = useState("");
   const [currentId, setCurrentId] = useState("");
   const [testing, setTesting] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [startTime, setStartTime] = useState("");
+  const [finishTime, setFinishTime] = useState("");
   const [typedCharacters, setTypedCharacters] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timer, setTimer] = useState(60);
+  const [finalWpm, setFinalWpm] = useState<number | null>(null);
+  const [finalAccuracy, setFinalAccuracy] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -58,6 +63,8 @@ export default function Home() {
     setTypedCharacters([]);
     setCurrentIndex(0);
     getRandomPassage();
+    setFinalWpm(null);
+    setFinalAccuracy(null);
     if (mode === "Passage") {
       setTimer(0);
     } else {
@@ -78,23 +85,81 @@ export default function Home() {
     }
   }, [mode]);
 
+  function finishTest() {
+    setTesting(false);
+    setHasStarted(false);
+    setFinishTime(Date.now());
+
+    const elapsedMinutes = (finishTime - startTime) / 60000;
+
+    const correctChars = typedCharacters.filter(
+      (char, i) => char === currentPassage[i]
+    ).length;
+
+    const accuracy =
+      typedCharacters.length === 0
+        ? 100
+        : Math.round((correctChars / typedCharacters.length) * 100);
+
+    const wordsTyped = typedCharacters.length / 5;
+    const wpm =
+      elapsedMinutes > 0 ? Math.round(wordsTyped / elapsedMinutes) : 0;
+
+    setFinalAccuracy(accuracy);
+    setFinalWpm(wpm);
+  }
+
   useEffect(() => {
-    if (testing && mode === "Timed (60s)") {
-      if (timer > 0) {
-        const interval = setInterval(() => {
-          setTimer((prev) => prev - 1);
-        }, 1000);
-        return () => clearInterval(interval);
-      } else {
-        setTesting(false);
-      }
-    } else if (testing && mode === "Passage") {
-      const interval = setInterval(() => {
-        setTimer((prev) => prev + 1);
-      }, 1000);
-      return () => clearInterval(interval);
+    if (!hasStarted || !testing) return;
+
+    const interval = setInterval(() => {
+      setTimer((prev) => {
+        if (mode === "Timed (60s)" && prev <= 1) {
+          clearInterval(interval);
+          finishTest();
+          return 0;
+        }
+
+        return mode === "Timed (60s)" ? prev - 1 : prev + 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [hasStarted, testing, mode]);
+
+  useEffect(() => {
+    if (testing && typedCharacters.length === currentPassage.length) {
+      finishTest();
     }
-  }, [testing, timer, mode]);
+  }, [typedCharacters, currentPassage, testing]);
+
+  const liveWpm = useMemo(() => {
+    if (!hasStarted || finalWpm !== null) return 0;
+
+    const elapsedMinutes = (Date.now() - startTime) / 60000;
+
+    if (elapsedMinutes <= 0) return 0;
+
+    const wordsTyped = typedCharacters.length / 5;
+
+    return Math.round(wordsTyped / elapsedMinutes);
+  }, [typedCharacters.length, startTime, hasStarted, finalWpm]);
+
+  function countCorrectCharacters(passage: string, typed: string[]) {
+    let correct = 0;
+    for (let i = 0; i < typed.length; i++) {
+      if (typed[i] === passage[i]) {
+        correct++;
+      }
+    }
+    return correct;
+  }
+
+  const accuracy = useMemo(() => {
+    if (typedCharacters.length === 0) return 100;
+    const correct = countCorrectCharacters(currentPassage, typedCharacters);
+    return Math.round((correct / typedCharacters.length) * 100);
+  }, [typedCharacters, currentPassage]);
 
   function startTest() {
     if (mode === "Passage") {
@@ -110,6 +175,11 @@ export default function Home() {
     e.preventDefault();
 
     if (!testing) return;
+
+    if (!hasStarted && e.key.length === 1) {
+      setHasStarted(true);
+      setStartTime(Date.now());
+    }
 
     if (e.key.length === 1) {
       setTypedCharacters((prev) => [...prev, e.key]);
@@ -136,13 +206,13 @@ export default function Home() {
           <p className="text-neutral-400 text-lg pe-6 border-e border-neutral-800">
             WPM:{" "}
             <span className="font-extrabold text-neutral-000 text-2xl mx-2">
-              0
+              {liveWpm}
             </span>
           </p>
           <p className="text-neutral-400 text-lg px-6 border-e border-neutral-800">
             Accuracy:{" "}
             <span className="font-extrabold text-neutral-000 text-2xl mx-2">
-              100%
+              {accuracy}%
             </span>
           </p>
           <p className="text-neutral-400 text-lg px-6 ">
@@ -214,27 +284,29 @@ export default function Home() {
         ref={inputRef}
       />
       <div className="text-center flex items-center justify-center">
-        <div>
-          <button
-            type="button"
-            onClick={() => restartTest()}
-            className="bg-neutral-800 px-4 py-2 rounded-md m-4 hover:bg-neutral-700 transition-colors duration-200 cursor-pointer flex items-center justify-center gap-2"
-          >
-            <span>Restart Test </span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              fill="none"
-              viewBox="0 0 20 20"
+        {testing && (
+          <div>
+            <button
+              type="button"
+              onClick={() => restartTest()}
+              className="bg-neutral-800 px-4 py-2 rounded-md m-4 hover:bg-neutral-700 transition-colors duration-200 cursor-pointer flex items-center justify-center gap-2"
             >
-              <path
-                fill="#fff"
-                d="M1.563 1.281h.949c.246 0 .422.211.422.457l-.07 3.446a8.6 8.6 0 0 1 7.277-3.868c4.816 0 8.718 3.938 8.718 8.72-.035 4.816-3.937 8.683-8.718 8.683a8.86 8.86 0 0 1-5.871-2.215.446.446 0 0 1 0-.633l.703-.703c.14-.14.386-.14.562 0 1.23 1.09 2.813 1.723 4.606 1.723A6.88 6.88 0 0 0 17.03 10c0-3.797-3.093-6.89-6.89-6.89-2.813 0-5.203 1.687-6.293 4.078l4.43-.106c.245 0 .456.176.456.422v.95c0 .245-.21.421-.421.421h-6.75a.406.406 0 0 1-.422-.422v-6.75c0-.21.175-.422.422-.422"
-              />
-            </svg>
-          </button>
-        </div>
+              <span>Restart Test </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fill="#fff"
+                  d="M1.563 1.281h.949c.246 0 .422.211.422.457l-.07 3.446a8.6 8.6 0 0 1 7.277-3.868c4.816 0 8.718 3.938 8.718 8.72-.035 4.816-3.937 8.683-8.718 8.683a8.86 8.86 0 0 1-5.871-2.215.446.446 0 0 1 0-.633l.703-.703c.14-.14.386-.14.562 0 1.23 1.09 2.813 1.723 4.606 1.723A6.88 6.88 0 0 0 17.03 10c0-3.797-3.093-6.89-6.89-6.89-2.813 0-5.203 1.687-6.293 4.078l4.43-.106c.245 0 .456.176.456.422v.95c0 .245-.21.421-.421.421h-6.75a.406.406 0 0 1-.422-.422v-6.75c0-.21.175-.422.422-.422"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </>
   );
