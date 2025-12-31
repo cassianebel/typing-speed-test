@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Difficulty from "@/components/Difficulty";
 import Mode from "@/components/Mode";
+import type { Difficulty, Mode, TestResult } from "@/types/typing";
 
-export type Difficulty = "Easy" | "Medium" | "Hard";
-export type Mode = "Timed (60s)" | "Passage";
+export type TestStatus = "idle" | "running" | "finished";
 
 export default function Home() {
   const [difficulty, setDifficulty] = useState<Difficulty>("Hard");
@@ -13,16 +14,19 @@ export default function Home() {
   const [data, setData] = useState("");
   const [currentPassage, setCurrentPassage] = useState("");
   const [currentId, setCurrentId] = useState("");
-  const [testing, setTesting] = useState(false);
+  const [status, setStatus] = useState<TestStatus>("idle");
   const [hasStarted, setHasStarted] = useState(false);
-  const [startTime, setStartTime] = useState("");
-  const [finishTime, setFinishTime] = useState("");
+  const [startTime, setStartTime] = useState<number | null>(null);
   const [typedCharacters, setTypedCharacters] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timer, setTimer] = useState(60);
-  const [finalWpm, setFinalWpm] = useState<number | null>(null);
-  const [finalAccuracy, setFinalAccuracy] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  // Refs used to avoid stale closures inside interval callbacks
+  const typedRef = useRef<string[]>([]);
+  const passageRef = useRef<string>("");
+  const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     fetch("/data.json")
@@ -52,25 +56,35 @@ export default function Home() {
   useEffect(() => {
     if (data) {
       getRandomPassage();
-      setTesting(false);
+      setStatus("idle");
       setTypedCharacters([]);
       setCurrentIndex(0);
     }
   }, [data, difficulty]);
 
+  // keep refs in sync with state so interval/finishTest can read latest values
+  useEffect(() => {
+    typedRef.current = typedCharacters;
+  }, [typedCharacters]);
+
+  useEffect(() => {
+    passageRef.current = currentPassage;
+  }, [currentPassage]);
+
+  useEffect(() => {
+    startTimeRef.current = startTime;
+  }, [startTime]);
+
   function restartTest() {
-    setTesting(false);
     setTypedCharacters([]);
     setCurrentIndex(0);
     getRandomPassage();
-    setFinalWpm(null);
-    setFinalAccuracy(null);
     if (mode === "Passage") {
       setTimer(0);
     } else {
       setTimer(60);
     }
-    setTesting(true);
+    setStatus("running");
     inputRef.current?.focus();
   }
 
@@ -80,37 +94,56 @@ export default function Home() {
     } else {
       setTimer(60);
     }
-    if (testing) {
+    if (status === "running") {
       restartTest();
     }
-  }, [mode]);
+  }, [mode, status]);
 
   function finishTest() {
-    setTesting(false);
+    setStatus("finished");
     setHasStarted(false);
-    setFinishTime(Date.now());
 
-    const elapsedMinutes = (finishTime - startTime) / 60000;
+    const finishTime = Date.now();
+    const durationSeconds =
+      mode === "Timed (60s)"
+        ? 60
+        : (finishTime - (startTimeRef.current ?? finishTime)) / 1000;
+    const elapsedMinutes = durationSeconds / 60;
 
-    const correctChars = typedCharacters.filter(
-      (char, i) => char === currentPassage[i]
-    ).length;
+    const typed = typedRef.current;
+    const passage = passageRef.current;
+
+    const correctChars = typed.filter((char, i) => char === passage[i]).length;
 
     const accuracy =
-      typedCharacters.length === 0
+      typed.length === 0
         ? 100
-        : Math.round((correctChars / typedCharacters.length) * 100);
+        : Math.round((correctChars / typed.length) * 100);
 
-    const wordsTyped = typedCharacters.length / 5;
+    const wrongChars = typed.length - correctChars;
+
+    const wordsTyped = typed.length / 5;
     const wpm =
       elapsedMinutes > 0 ? Math.round(wordsTyped / elapsedMinutes) : 0;
 
-    setFinalAccuracy(accuracy);
-    setFinalWpm(wpm);
+    const result: TestResult = {
+      wpm: wpm,
+      accuracy: accuracy,
+      correctChars,
+      wrongChars,
+      mode,
+      difficulty,
+      durationSeconds,
+      timestamp: Date.now(),
+    };
+
+    sessionStorage.setItem("lastResult", JSON.stringify(result));
+
+    router.push("/results");
   }
 
   useEffect(() => {
-    if (!hasStarted || !testing) return;
+    if (!hasStarted || status != "running") return;
 
     const interval = setInterval(() => {
       setTimer((prev) => {
@@ -125,25 +158,31 @@ export default function Home() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [hasStarted, testing, mode]);
+  }, [hasStarted, status, mode]);
 
   useEffect(() => {
-    if (testing && typedCharacters.length === currentPassage.length) {
+    if (
+      status === "running" &&
+      typedCharacters.length === currentPassage.length
+    ) {
       finishTest();
     }
-  }, [typedCharacters, currentPassage, testing]);
+  }, [typedCharacters, currentPassage, status]);
 
   const liveWpm = useMemo(() => {
-    if (!hasStarted || finalWpm !== null) return 0;
+    if (!hasStarted || status !== "running") return 0;
 
-    const elapsedMinutes = (Date.now() - startTime) / 60000;
+    const start = startTimeRef.current;
+    if (!start) return 0;
+
+    const elapsedMinutes = (Date.now() - start) / 60000;
 
     if (elapsedMinutes <= 0) return 0;
 
-    const wordsTyped = typedCharacters.length / 5;
+    const wordsTyped = typedRef.current.length / 5;
 
     return Math.round(wordsTyped / elapsedMinutes);
-  }, [typedCharacters.length, startTime, hasStarted, finalWpm]);
+  }, [typedCharacters.length, startTime, hasStarted, status]);
 
   function countCorrectCharacters(passage: string, typed: string[]) {
     let correct = 0;
@@ -162,19 +201,22 @@ export default function Home() {
   }, [typedCharacters, currentPassage]);
 
   function startTest() {
-    if (mode === "Passage") {
-      setTimer(0);
-    } else {
-      setTimer(60);
+    if (!hasStarted) {
+      setHasStarted(true);
+      setStartTime(Date.now());
     }
-    setTesting(true);
+
+    if (mode === "Passage") setTimer(0);
+    else setTimer(60);
+
+    setStatus("running");
     inputRef.current?.focus();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     e.preventDefault();
 
-    if (!testing) return;
+    if (status != "running") return;
 
     if (!hasStarted && e.key.length === 1) {
       setHasStarted(true);
@@ -234,7 +276,7 @@ export default function Home() {
       >
         <p
           className={
-            testing
+            status === "running"
               ? "text-2xl md:text-4xl leading-relaxed text-neutral-400"
               : "blur-md text-2xl md:text-4xl leading-relaxed text-neutral-400"
           }
@@ -261,7 +303,7 @@ export default function Home() {
             );
           })}
         </p>
-        {!testing && (
+        {status === "idle" && (
           <div className="absolute top-0 left-0 w-full h-full flex flex-col itemc-center justify-center">
             <div className="text-center">
               <button
@@ -284,7 +326,7 @@ export default function Home() {
         ref={inputRef}
       />
       <div className="text-center flex items-center justify-center">
-        {testing && (
+        {status === "running" && (
           <div>
             <button
               type="button"
