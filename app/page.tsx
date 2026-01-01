@@ -104,10 +104,9 @@ export default function Home() {
     setHasStarted(false);
 
     const finishTime = Date.now();
-    const durationSeconds =
-      mode === "Timed (60s)"
-        ? 60
-        : (finishTime - (startTimeRef.current ?? finishTime)) / 1000;
+    const durationSeconds = Math.round(
+      (finishTime - (startTimeRef.current ?? finishTime)) / 1000
+    );
     const elapsedMinutes = durationSeconds / 60;
 
     const typed = typedRef.current;
