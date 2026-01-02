@@ -1,6 +1,8 @@
 "use client";
+import { useBestWpm } from "@/hooks/useBestWpm";
 
 export default function Header() {
+  const { bestWpm } = useBestWpm();
   return (
     <header className="flex items-center justify-between gap-2 mb-10">
       <div className="flex items-center gap-2">
@@ -57,7 +59,7 @@ export default function Header() {
         </div>
         <p className="text-neutral-400 font-light text-lg">
           <span className="hidden sm:inline">Personal </span>Best:{" "}
-          <span className="text-neutral-000">0 WPM</span>
+          <span className="text-neutral-000">{bestWpm} WPM</span>
         </p>
       </div>
     </header>

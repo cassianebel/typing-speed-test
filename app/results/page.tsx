@@ -2,6 +2,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TestResult } from "@/types/typing";
+import Heading1 from "@/components/Heading1";
+import Lead from "@/components/Lead";
+import Stat from "@/components/Stat";
+import Heading2 from "@/components/Heading2";
+import { useBestWpm } from "@/hooks/useBestWpm";
 
 export default function ResultsPage() {
   const [lastResult, setLastResult] = useState<TestResult | null>(() => {
@@ -16,27 +21,23 @@ export default function ResultsPage() {
 
   const router = useRouter();
 
-  const [bestBefore] = useState<number | null>(() => {
+  const bestBefore: number | null = (() => {
     const s = localStorage.getItem("bestWpm");
     return s === null ? null : Number(s);
-  });
+  })();
 
-  const [isFirstTest] = useState(
-    () => localStorage.getItem("bestWpm") === null
-  );
+  const isFirstTest = bestBefore === null;
+
+  const isNewBest =
+    lastResult !== null && bestBefore !== null && lastResult.wpm > bestBefore;
+
+  const { updateBestWpm } = useBestWpm();
 
   useEffect(() => {
     if (!lastResult) return;
 
-    if (bestBefore === null) {
-      localStorage.setItem("bestWpm", String(lastResult.wpm));
-      return;
-    }
-
-    if (lastResult.wpm > bestBefore) {
-      localStorage.setItem("bestWpm", String(lastResult.wpm));
-    }
-  }, [lastResult, bestBefore]);
+    updateBestWpm(lastResult.wpm);
+  }, [lastResult, updateBestWpm]);
 
   if (!lastResult) {
     return (
@@ -46,8 +47,6 @@ export default function ResultsPage() {
       </div>
     );
   }
-
-  const isNewBest = bestBefore !== null && lastResult.wpm > bestBefore;
 
   return (
     <div className="p-8 flex flex-col items-center gap-8">
@@ -107,16 +106,16 @@ export default function ResultsPage() {
               fill="none"
               viewBox="0 0 64 64"
             >
-              <g clip-path="url(#a)">
+              <g clipPath="url(#a)">
                 <path
                   fill="#121212"
                   d="M0 32C0 14.327 14.327 0 32 0s32 14.327 32 32-14.327 32-32 32S0 49.673 0 32"
                 />
                 <path
                   fill="#4dd67b"
-                  fill-rule="evenodd"
+                  fillRule="evenodd"
                   d="M45.45 26.01 29.895 41.567a2.51 2.51 0 0 1-1.785.741c-.65 0-1.294-.245-1.79-.74l-7.777-7.778a2.527 2.527 0 0 1 3.57-3.574l5.997 5.992 13.766-13.77a2.527 2.527 0 1 1 3.574 3.574M32 0C14.356 0 0 14.356 0 32c0 17.647 14.356 32 32 32s32-14.353 32-32C64 14.356 49.644 0 32 0"
-                  clip-rule="evenodd"
+                  clipRule="evenodd"
                 />
               </g>
               <defs>
@@ -134,41 +133,53 @@ export default function ResultsPage() {
 
       {isFirstTest ? (
         <div className="text-center">
-          <h1 className="text-5xl font-bold mb-4">Baseline Established!</h1>
-          <p className="text-neutral-400 text-xl font-light">
-            You've set the bar. Now the real challenge begins—time to beat it.
-          </p>
+          <Heading1 text="Baseline Established!" />
+          <Lead text="You've set the bar. Now the real challenge begins—time to beat it." />
         </div>
       ) : isNewBest ? (
         <div className="text-center">
-          <h1 className="text-5xl font-bold mb-4">High Score Smashed!</h1>
-          <p className="text-neutral-400 text-xl font-light">
-            You're getting faster. That was incredible typing.
-          </p>
+          <Heading1 text="High Score Smashed!" />
+          <Lead text="You're getting faster. That was incredible typing." />
         </div>
       ) : (
         <div className="text-center">
-          <h1 className="text-5xl font-bold mb-4">Test Complete!</h1>
-          <p className="text-neutral-400 text-xl font-light">
-            Solid run. Keep pushing to beat your high score.
-          </p>
+          <Heading1 text="Test Complete!" />
+          <Lead text="Solid run. Keep pushing to beat your high score." />
         </div>
       )}
 
-      <div>
-        <p>WPM: {lastResult.wpm ?? "N/A"}</p>
-        <p>Accuracy: {lastResult.accuracy ?? "N/A"}%</p>
-        <p>
-          Characters: {lastResult.correctChars}/{lastResult.wrongChars}
-        </p>
-      </div>
+      <ul className="grid gap-4 w-full md:grid-cols-3 lg:max-w-2xl">
+        <Stat>
+          <Heading2 text="WPM" />
+          <p className="text-3xl font-bold">{lastResult.wpm ?? "N/A"}</p>
+        </Stat>
+        <Stat>
+          <Heading2 text="Accuracy" />
+          <p
+            className={
+              lastResult.accuracy === 100
+                ? "text-green-500 text-3xl font-bold"
+                : "text-red-500 text-3xl font-bold"
+            }
+          >
+            {lastResult.accuracy ?? "N/A"}%
+          </p>
+        </Stat>
+        <Stat>
+          <Heading2 text="Characters" />
+          <p className="text-3xl font-bold text-neutral-500">
+            <span className="text-green-500">{lastResult.correctChars}</span>/
+            <span className="text-red-500">{lastResult.wrongChars}</span>
+          </p>
+        </Stat>
+      </ul>
 
       <button
         type="button"
         onClick={() => router.push("/")}
         className="bg-neutral-000 text-neutral-800 px-4 py-2 rounded-md m-4 hover:bg-neutral-200 transition-colors duration-200 cursor-pointer flex items-center justify-center gap-2"
       >
-        <span>Go Again </span>
+        <span>{isFirstTest ? "Beat This Score" : "Go Again"} </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="20"
